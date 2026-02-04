@@ -29,9 +29,14 @@ DIRETRIZES GERAIS:
 - Não confirme pagamentos reais.
 `;
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const createChatSession = (): Chat => {
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("API Key configuration missing. Check .env file.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+
   return ai.chats.create({
     model: 'gemini-2.5-flash',
     config: {
@@ -41,7 +46,7 @@ export const createChatSession = (): Chat => {
       tools: [
         { googleMaps: {} },
         { functionDeclarations: mondeToolsSchema }
-      ], 
+      ],
     },
   });
 };
@@ -53,12 +58,12 @@ export interface AgentResponse {
 }
 
 export const sendMessageToAgent = async (
-  chat: Chat, 
-  message: string, 
+  chat: Chat,
+  message: string,
   userLocation?: { latitude: number; longitude: number },
   attachment?: Attachment
 ): Promise<AgentResponse> => {
-  
+
   // Dynamic config for Maps Grounding
   let requestConfig: any = undefined;
   if (userLocation) {
@@ -96,10 +101,10 @@ export const sendMessageToAgent = async (
 
   // --- THE TOOL LOOP ---
   // We need to keep sending responses back to the model as long as it asks to call functions.
-  
+
   // 1. First Turn
   let response = await chat.sendMessage({
-    message: messagePayload, 
+    message: messagePayload,
     config: requestConfig
   });
 
@@ -108,13 +113,13 @@ export const sendMessageToAgent = async (
   // 2. Loop while the model wants to call functions
   // The SDK simplifies this, but we need to check 'functionCalls' in the response candidates
   while (response.candidates?.[0]?.content?.parts?.some(p => p.functionCall)) {
-    
+
     const parts = response.candidates[0].content.parts;
     const functionCallPart = parts.find(p => p.functionCall);
-    
+
     if (functionCallPart && functionCallPart.functionCall) {
       const { name, args } = functionCallPart.functionCall;
-      
+
       // Log for UI display
       toolCallsLog.push({ name, args });
 
