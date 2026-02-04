@@ -1,0 +1,7 @@
+{
+  "name": "LuxTravel AI Agent",
+  "description": "A premium, professional travel agency AI assistant capable of finding real hotels and destinations using Google Maps grounding.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
