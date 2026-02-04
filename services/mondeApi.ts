@@ -141,47 +141,30 @@ class MondeApiClient {
 
 export const PeopleService = {
   async list(filterName?: string) {
-    // API LIMIT FIX: The API restricts page[size] to a maximum of 50.
-    // To maintain a wider search range (100 records) for client-side filtering, 
-    // we fetch the first 2 pages in parallel.
-
     try {
-      const p1 = MondeApiClient.get<JsonApiResponse<JsonApiResource[]>>(`/people?page[size]=50&page[number]=1`);
-      const p2 = MondeApiClient.get<JsonApiResponse<JsonApiResource[]>>(`/people?page[size]=50&page[number]=2`);
+      // Use API Server-Side Filtering
+      const queryParams = new URLSearchParams();
 
-      const [res1, res2] = await Promise.all([p1, p2]);
-
-      const data1 = res1.data || [];
-      const data2 = res2.data || [];
-      const allData = [...data1, ...data2];
-
-      // Explicitly cast to PersonAttributes
-      let people = allData.map(p => ({
-        id: p.id,
-        ...p.attributes
-      })) as (PersonAttributes & { id?: string })[];
-
-      // 2. Client-side "Fuzzy" Filtering
       if (filterName) {
-        // Split search term into tokens (e.g. "Joao Silva" -> ["joao", "silva"])
-        const searchTokens = normalizeStr(filterName).split(" ").filter(t => t.length > 0);
-
-        people = people.filter(p => {
-          if (!p.name || typeof p.name !== 'string') return false;
-
-          const normalizedName = normalizeStr(p.name);
-
-          // Check if ALL search tokens exist in the name.
-          return searchTokens.every(token => normalizedName.includes(token));
-        });
+        // Monde API v2 filter[search] supports: Name, Company Name, CPF, CNPJ, Phone
+        queryParams.append('filter[search]', filterName);
       }
 
-      return people;
+      // Default sort by name for better UX
+      queryParams.append('sort', 'name');
+
+      const queryString = queryParams.toString();
+      const endpoint = `/people?${queryString}`;
+
+      const res = await MondeApiClient.get<JsonApiResponse<JsonApiResource[]>>(endpoint);
+
+      return res.data.map(p => ({
+        id: p.id,
+        ...p.attributes
+      }));
     } catch (error) {
       console.error("PeopleService.list error:", error);
-      // If fetching multiple pages fails, try a safe fallback to just page 1
-      const res = await MondeApiClient.get<JsonApiResponse<JsonApiResource[]>>(`/people?page[size]=50`);
-      return res.data.map(p => ({ id: p.id, ...p.attributes }));
+      throw error;
     }
   },
 

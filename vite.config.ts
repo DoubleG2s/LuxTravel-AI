@@ -12,7 +12,9 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.API_KEY || env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || env.API_KEY)
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || env.API_KEY),
+      'process.env.MONDE_LOGIN': JSON.stringify(env.MONDE_LOGIN),
+      'process.env.MONDE_PASSWORD': JSON.stringify(env.MONDE_PASSWORD)
     },
     resolve: {
       alias: {
