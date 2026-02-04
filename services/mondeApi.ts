@@ -6,8 +6,8 @@ const API_BASE_URL = "https://web.monde.com.br/api/v2";
 // CONFIGURATION: Credentials are now pulled from environment variables for security in deployment.
 // Fallback values are kept for local development convenience but should be replaced in production.
 const CREDENTIALS = {
-  login: process.env.MONDE_LOGIN || "guilherme.batista@clubeturismojardinopolis.monde.com.br",
-  password: process.env.MONDE_PASSWORD || "YOUR_MONDE_PASSWORD"
+  login: process.env.MONDE_LOGIN || "[EMAIL_ADDRESS]",
+  password: process.env.MONDE_PASSWORD || "[PASSWORD]"
 };
 
 // --- HELPER: TEXT NORMALIZATION ---
@@ -144,38 +144,38 @@ export const PeopleService = {
     // API LIMIT FIX: The API restricts page[size] to a maximum of 50.
     // To maintain a wider search range (100 records) for client-side filtering, 
     // we fetch the first 2 pages in parallel.
-    
+
     try {
       const p1 = MondeApiClient.get<JsonApiResponse<JsonApiResource[]>>(`/people?page[size]=50&page[number]=1`);
       const p2 = MondeApiClient.get<JsonApiResponse<JsonApiResource[]>>(`/people?page[size]=50&page[number]=2`);
-      
+
       const [res1, res2] = await Promise.all([p1, p2]);
-      
+
       const data1 = res1.data || [];
       const data2 = res2.data || [];
       const allData = [...data1, ...data2];
 
       // Explicitly cast to PersonAttributes
-      let people = allData.map(p => ({ 
-        id: p.id, 
-        ...p.attributes 
+      let people = allData.map(p => ({
+        id: p.id,
+        ...p.attributes
       })) as (PersonAttributes & { id?: string })[];
 
       // 2. Client-side "Fuzzy" Filtering
       if (filterName) {
         // Split search term into tokens (e.g. "Joao Silva" -> ["joao", "silva"])
         const searchTokens = normalizeStr(filterName).split(" ").filter(t => t.length > 0);
-        
+
         people = people.filter(p => {
           if (!p.name || typeof p.name !== 'string') return false;
-          
+
           const normalizedName = normalizeStr(p.name);
-          
+
           // Check if ALL search tokens exist in the name.
           return searchTokens.every(token => normalizedName.includes(token));
         });
       }
-      
+
       return people;
     } catch (error) {
       console.error("PeopleService.list error:", error);
@@ -225,10 +225,10 @@ export const TasksService = {
     const res = await MondeApiClient.post<JsonApiResponse<JsonApiResource>>("/tasks", payload);
     return { id: res.data.id, ...res.data.attributes };
   },
-  
+
   async getHistory(taskId: string) {
-      const res = await MondeApiClient.get<JsonApiResponse<JsonApiResource[]>>(`/task-historics?filter[task_id]=${taskId}`);
-      return res.data.map(h => ({ id: h.id, ...h.attributes }));
+    const res = await MondeApiClient.get<JsonApiResponse<JsonApiResource[]>>(`/task-historics?filter[task_id]=${taskId}`);
+    return res.data.map(h => ({ id: h.id, ...h.attributes }));
   }
 };
 
