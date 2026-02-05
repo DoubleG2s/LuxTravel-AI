@@ -1,5 +1,6 @@
 import { FunctionDeclaration, Schema, Type } from "@google/genai";
 import { PeopleService, TasksService, CitiesService } from "./mondeApi";
+import { SalesService } from "./salesApi";
 
 // --- 1. FUNCTION DEFINITIONS (SCHEMA) ---
 
@@ -66,7 +67,17 @@ export const mondeToolsSchema: FunctionDeclaration[] = [
     parameters: {
       type: Type.OBJECT,
       properties: {
-         filterName: { type: Type.STRING, description: "Optional name of city to find." }
+        filterName: { type: Type.STRING, description: "Optional name of city to find." }
+      }
+    }
+  },
+  {
+    name: "list_sales",
+    description: "Lista vendas, passageiros e reservas do sistema. Use para buscar informações sobre viagens, passageiros e datas.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        passengerName: { type: Type.STRING, description: "Nome parcial do passageiro para buscar." }
       }
     }
   }
@@ -76,12 +87,12 @@ export const mondeToolsSchema: FunctionDeclaration[] = [
 
 export const executeMondeTool = async (name: string, args: any): Promise<any> => {
   console.log(`[Tool Execution] Calling ${name} with`, args);
-  
+
   try {
     switch (name) {
       case "list_people":
         return await PeopleService.list(args.filterName);
-      
+
       case "create_person":
         return await PeopleService.create({ name: args.name, email: args.email, phone: args.phone });
 
@@ -93,9 +104,12 @@ export const executeMondeTool = async (name: string, args: any): Promise<any> =>
 
       case "create_task":
         return await TasksService.create({ description: args.description, due_date: args.due_date });
-        
+
       case "list_cities":
         return await CitiesService.list(args.filterName);
+
+      case "list_sales":
+        return await SalesService.list(args.passengerName);
 
       default:
         throw new Error(`Unknown tool: ${name}`);
